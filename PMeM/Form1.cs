@@ -1,8 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
+using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -17,27 +20,31 @@ namespace PMeM
         }
         private void Button3_Click(object sender, EventArgs e)
         {
-            MessageBox.Show(MemShare.Check(textBox1.Text, textBox2.Text).ToString());
+            MessageBox.Show(Scaler.MemShare.Check(textBox1.Text, textBox2.Text).ToString());
         }
-
         private void Button4_Click(object sender, EventArgs e)
         {
-            textBox4.Text = MemShare.ToString();
+            textBox4.Text = Scaler.MemShare.ToString();
         }
-
         public string chek(object i)
         {
-            MemShare.Check(i + "-ddddd", "ffffffffffffffffffff");
+            Scaler.MemShare.Check(i + "-ddddd", "ffffffffffffffffffff");
             Interlocked.Decrement(ref iwork);
             return "";
         }
-
         public string sign(object stu_id)
         {
-            string url = string.Format("http://localhost:50322/student/test.aspx?b_id=4&s_id={0}&l_id=160&d=fri", stu_id);
+            string url = string.Format("http://localhost:50322/student/test.aspx?b_id=5&s_id={0}&l_id=213&d=fri", stu_id);
             Scaler.Http http = new Scaler.Http();
             string content= http.GetHTML(url, "", "", "", "GET");
             Scaler.Win.WriteLog(stu_id + "\t" + content);
+            Interlocked.Decrement(ref iwork);
+            return "";
+        }
+        public string getClient(object obj)
+        {
+            Scaler.NewClient ct = Scaler.MemShare.GetClient();
+            Scaler.MemShare.ReleaseClient(ct);
             Interlocked.Decrement(ref iwork);
             return "";
         }
@@ -45,12 +52,23 @@ namespace PMeM
         int iwork = 0;
         private void Button5_Click(object sender, EventArgs e)
         {
-            for (int i = 14217; i < 15375; i++)
+            DateTime dt = DateTime.Now;
+            for (int j = 0; j < 10000; j++)
+            {
+                Scaler.NewClient ct = Scaler.MemShare.GetClient();
+                Scaler.MemShare.ReleaseClient(ct);
+            }
+            MessageBox.Show((DateTime.Now - dt).TotalMilliseconds.ToString());
+            //return;
+
+            //* memshare 测试
+            for (int i = 0; i < 15375; i++)
             {
                 Interlocked.Increment(ref iwork);
                 Task<string>.Factory.StartNew(new Func<object, string>(chek), i);
             }
             WaitFinished();
+            //*/
         }
 
 
@@ -233,8 +251,9 @@ namespace PMeM
 
         private void Button8_Click(object sender, EventArgs e)
         {
-            File.Open("123.txt", FileMode.OpenOrCreate).Close();
-            //Scaler.C.refresh("CurTime");
+            Scaler.MemShare.Init();
+            Scaler.MemShare.bInit = 0;
+            MessageBox.Show("已关闭");
         }
 
         private void Button9_Click(object sender, EventArgs e)
@@ -308,9 +327,62 @@ namespace PMeM
             string url = string.Format("http://tsn.baidu.com/text2audio?lan=zh&ctp=1&cuid=abcdxxx&tok={0}&tex={1}&vol=9&per=0&spd=5&pit=5&aue=3", access_token, text);
             return "1" + url;
         }
-
+        static readonly Regex regHead = new Regex(@"<head(>|\s.*?>)",RegexOptions.Multiline | RegexOptions.Compiled);
+        Regex regHead2 = new Regex(@"<head(>|\s.*?>)", RegexOptions.IgnoreCase);
         private void Button10_Click(object sender, EventArgs e)
         {
+            Stopwatch timer = new Stopwatch();
+            timer.Start();
+            for (int i = 0; i < 100000; i++)
+            {
+                List<byte> ls = new List<byte>();
+                ls.AddRange(BitConverter.GetBytes((uint)1));
+                ls.AddRange(BitConverter.GetBytes((uint)5000));
+                ls.AddRange(BitConverter.GetBytes((uint)1000));
+                var b = ls.ToArray();
+            }
+            timer.Stop();
+            MessageBox.Show(timer.ElapsedMilliseconds.ToString());
+
+            timer.Restart();
+            for (int i = 0; i < 100000; i++)
+            {
+                var c = BitConverter.GetBytes((uint)1)
+                    .Concat(BitConverter.GetBytes((uint)5000))
+                    .Concat(BitConverter.GetBytes((uint)1000))
+                    .ToArray();
+            }
+                timer.Stop();
+                MessageBox.Show(timer.ElapsedMilliseconds.ToString());
+
+                return;
+
+
+
+                string text = File.ReadAllText("main.html").ToLowerInvariant();
+            for (int i = 0; i < 100000; i++)
+            {
+                Match m = regHead2.Match(text);
+                if (m.Success) { }
+            }
+            timer.Stop();
+            MessageBox.Show(timer.ElapsedMilliseconds.ToString());
+
+            timer.Restart();
+            text = File.ReadAllText("main.html").ToLowerInvariant();
+            for (int i = 0; i < 100000; i++)
+            {
+                Match m = regHead.Match(text);
+                if (m.Success) { }
+            }
+            timer.Stop();
+            MessageBox.Show(timer.ElapsedMilliseconds.ToString());
+
+            return;
+
+
+            bool.TryParse(null, out bool bval);
+
             string url = Text2Audio("1号桌订餐红烧茄子").TrimStart(new char[] { '1' });
 
             axWindowsMediaPlayer1.stretchToFit = true; // 自动缩放。
@@ -326,23 +398,28 @@ namespace PMeM
 
         private void Button1_Click_1(object sender, EventArgs e)
         {
-            MemShare.Set(textBox1.Text, textBox2.Text);
+            Scaler.MemShare.Set(textBox1.Text, textBox2.Text);
         }
 
         private void Button11_Click(object sender, EventArgs e)
         {
-            MemShare.Remove(textBox1.Text);
+            Scaler.MemShare.Remove(textBox1.Text);
         }
 
         private void Button12_Click(object sender, EventArgs e)
         {
-            MessageBox.Show(MemShare.Get(textBox1.Text));
+            MessageBox.Show(Scaler.MemShare.Get(textBox1.Text));
         }
 
         private void Button13_Click(object sender, EventArgs e)
         {
-            MessageBox.Show(MemShare.ClientCount.ToString());
-            MessageBox.Show(MemShare.Dump());
+            //MessageBox.Show(Scaler.MemShare.ClientCount.ToString());
+            MessageBox.Show(Scaler.MemShare.Dump());
+        }
+
+        private void Form1_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            Scaler.MemShare.Dispose();
         }
     }
 }

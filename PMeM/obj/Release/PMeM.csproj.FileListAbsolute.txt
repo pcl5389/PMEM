@@ -18,3 +18,4 @@ D:\Projects\PMeM\PMeM\bin\Release\AxInterop.WMPLib.dll
 D:\Projects\PMeM\PMeM\obj\Release\Interop.WMPLib.dll
 D:\Projects\PMeM\PMeM\obj\Release\AxInterop.WMPLib.dll
 D:\Projects\PMeM\PMeM\obj\Release\PMeM.csproj.ResolveComReference.cache
+D:\Projects\PMeM\PMeM\bin\Release\PMeM.exe.config

@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+
+<html style="overflow: hidden">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta http-equiv="X-UA-Compatible" content="IE=8, IE=9, IE=10, chrome=1" />
+<meta name="viewport" content="width=1300, height=device-height, initial-scale=0.7, user-scalable=yes">
+<meta name="renderer" content="webkit" />
+<title>山东汇久业务管理系统</title>
+<link rel="shortcut icon" href="include/favicon.ico" type="image/x-icon" />
+<link href="style/default.css" rel="stylesheet" type="text/css">
+<style></style>
+<script src="framework/main.js"></script>
+<script src="framework/spell.js"></script>
+<script>
+var lastWinWidth=0;
+var timeoutID = 0;
+var timeoutMerchStat = 0;
+
+Page.onReady(function(){
+	//timeoutID = setTimeout(getNewMessageCount, 1000*3);
+	timeoutMerchStat = setTimeout(getNewMerchCount, 1000);
+	lastWinWidth=$(window).width();
+	
+});
+EventManager.onWindowResize(function(){
+	winWidth=$(window).width();
+	if(lastWinWidth<1000 && (winWidth>1000 || winWidth-lastWinWidth>50)){
+		location.reload();
+	}
+});
+
+//获取短消息
+function getNewMessageCount(){
+	return;
+	var dc = {SessionID:"A1824C5F32E18963080FE0A9B06EC5D3"};
+	Server.sendRequest("Message.getNewMessage",dc,function(response){
+		var count = response.Count;
+		$('#MsgCount').html(count);
+		
+		if(response.PopFlag=="Y"){
+			MsgPop(response.Message,null,450,null,30);
+		}
+		if(response.LogoutFlag !== undefined && response.LogoutFlag!="Y"){
+			timeoutID = setTimeout(getNewMessageCount, 1000*30);
+		}
+		
+	},null,true,'json');//true表示不需要session，否则页面打开后即会永不失效
+}
+
+function show_tip(v, id)
+{
+	if(v=="0")
+	{
+		 $("#"+id).html(v);
+		 $("#"+id).hide();
+	}
+	else
+	{
+		if($("#"+id).html()!=v)
+		{
+			 if($("#"+id).html()=='0')
+				$("#"+id).show();
+			 $("#"+id).html(v);
+		}
+	}
+}
+var stp=0;
+//获取短消息
+function getNewMerchCount(){
+	var dc={stamp:stp};
+	Server.sendRequest("Merchants.AjaxNewMerchStat",dc,function(response){
+		if(typeof(response.Status)=="undefined" && !jQuery.isEmptyObject(response)){
+			stp= response["TM"];
+			show_tip(response["01"],"ToBankCount");
+			show_tip(response["02"],"RiskCheckCount");
+			show_tip(response["04"],"ToUnionpayCount");
+			show_tip(response["06"],"PosCheckCount");
+			show_tip(response["08"],"OutStockCount");
+			show_tip(response["10"],"ToSetupCount");
+			show_tip(response["99"],"JoiningCount");
+
+			show_tip(response["26"],"EctRiskCheckCount");
+			show_tip(response["26"],"EctCount");
+			show_tip(response["27"]+response["28"],"AbcCount");
+			show_tip(response["27"],"AbcCommissionCount");
+			show_tip(response["28"],"AbcNoPassCount");
+			show_tip(response["29"],"CcbCommissionCount");
+			show_tip(response["29"],"CcbCount");
+			show_tip(response["30"],"BcmCommissionCount");
+			show_tip(response["30"],"BcmCount");
+
+			show_tip(response["17"],"RevokeInStockCount");																			   
+			show_tip(response["18"],"RevokeCheckCount");
+			show_tip(response["14"],"PosLoseCount");
+			show_tip(response["22"],"RevokeYajinCount");
+			show_tip(response["23"],"RevokeInquiryCount");
+			show_tip(response["24"],"YajinRepayCount");
+			show_tip(response["25"],"RevokeToBankCount");
+			show_tip(response["88"],"RevokingCount");
+
+		   show_tip(response["90"],"ApplyCount");
+		   show_tip(response["91"],"AuditCount");
+		   show_tip(response["92"],"ApplyAuditCount");
+		   show_tip(response["93"]+response["94"],"ServiceCount");
+		   show_tip(response["93"],"CommissionCount");
+		   show_tip(response["94"],"MrecommendCount");
+		}
+		timeoutMerchStat = setTimeout(getNewMerchCount, 1000*5);
+	},null,true,'json');//true表示不需要session，否则页面打开后即会永不失效
+}
+
+
+
+function stopGetMessage(){
+	clearTimeout(timeoutID);
+}
+
+//定位到短消息菜单
+function getMessage(){
+	var diag = new Dialog("短消息列表","platform/message/message.zhtml",900,500);
+	diag.show();
+}
+
+Tab=Zving.TabPage;
+
+function onLanguageChange(strLang){
+	var dc = {Language:(strLang?strLang:$('#Language').val())};
+	Server.sendRequest("Application.changeLanguage",dc,function(response){
+		window.location.reload();
+	});
+}
+
+Application.logout = function() {
+	Dialog.confirm("您确认要退出系统吗？", function() {
+		Server.sendRequest("Users.Logout");
+	});
+};
+
+function pngfix(img){
+	if(Zving.isIE6&&/\.png$/i.test(img.src)){
+		var imgsrc=img.src;
+		img.style.width=img.offsetWidth;
+		img.style.height=img.offsetHeight;
+		img.src='framework/images/blank.gif';
+		img.style.filter='progid:DXImageTransform.Microsoft.AlphaImageLoader(sizingMethod="scale", src="'+imgsrc+'")';
+	}
+}
+
+function openSettingTabs(func) {
+	var diag = new Dialog({
+		title:"修改密码：{$username}",
+		url:"/users/setting.aspx",
+		width:500,
+		height:250
+	});
+	diag.onOk = function(){
+		$DW.save(func);
+	}
+	diag.onCancel=function(){$DW.close();};
+	diag.show();
+}
+
+function changeSkin(skin){
+	Cookie.set("zcms_skin", skin, 60*60*24*100,"/");
+	Config.skin=skin;
+	window.location.reload();
+}
+
+$(function(){
+
+	var timer;
+	var $skinSelector=$('#skinSelector');
+	$skinSelector.hover(function(){
+		clearTimeout(timer);
+		$('#skinsMenu').css('left',$skinSelector.offset().left).show();
+	},function(){
+		timer=setTimeout(function(){$('#skinsMenu').hide();},300);
+	})
+	$('#skinsMenu').hover(function(){
+		clearTimeout(timer);
+	},function(){
+		timer=setTimeout(function(){$('#skinsMenu').hide();},300);
+	})
+
+	//getMessage();	   
+})
+function onSiteChange(){
+	var dc = {SiteID:$V('Site')};
+	Server.sendRequest("Site.changeSite",dc,function(response){
+		var url = response.url;
+		if(url==undefined){
+			window.location.reload();
+		}else{
+			loadJS(url);
+		}
+	});
+}
+
+function preview(link){
+	var url="ContentCore/site/preview?ID=";
+	link.target='_blank'
+	link.href=url;
+	return true;
+}
+
+function gotoEditWorkSpace(){
+	$G('_Menu_ContentCore.EditWorkSpace').onclick();
+}
+
+function ClearCache()
+{
+	Server.sendRequest("Clearcache.Ajax",null,function(response){
+		if(response&&response.Status==1){
+			Dialog.alert(response.Message);
+		}
+		else
+		{
+			Dialog.warn(response.Message);
+		}
+	});
+}
+
+</script>
+<style>
+body {
+	background-color: #DBE8F4;
+	min-width: 1000px;
+	min-height: 300px;
+}
+.no_text_btn .z-btn b {
+	padding-right: 0;
+}
+#oneKeyReprintTool_div {
+	position: absolute;
+	left: 100px;
+	top: 100px;
+}
+#skinsMenu a.z-btn-inmenu {
+	min-width: 66px;
+	text-indent: 0.5em;
+}
+</style>
+<!--[if lte IE 6]>
+<style>
+img { behavior: url(style/iepngfix.htc) }
+body{
+	width:expression(document.documentElement.clientWidth < 1000? "1000px" : "auto");
+	height:expression(document.documentElement.clientHeight < 300? "300px" : "auto");
+}
+</style>
+<![endif]-->
+<style>
+.count_tip {
+	font-size: 9px;
+	font-family: Tahoma, Geneva, sans-serif;
+	display: inline-block;
+	text-align: center;
+	line-height: 11px;
+	padding: 1px 4px 1px 4px;
+	border-radius: 10px;
+	height: 11px;
+	min-width: 6px;
+	border: 0px solid rgba(255,255,255,0.9);
+	color: #fff;
+	background-color: #FF6F4B;
+	box-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+	position: relative;
+	left: -6px;
+	top: -5px;
+	display:none
+}
+</style>
+<!--<![endif]-->
+</head>
+<body class="z-body-index language-zh-cn" id="application" style="_overflow:hidden;_height:100%;_width:100%; min-width:1300px;">
+<div id="skinsMenu" class="z-layer z-menu z-hidden" style="z-index: 10200; position: absolute; left: 1035px; top: 25px;"> <a class="z-btn z-btn-inmenu" onClick="changeSkin('zvingclassic')" href="javascript:void(0)">经典蓝色</a>  
+<a class="z-btn z-btn-inmenu" onClick="changeSkin('zvingflat')" href="javascript:void(0)">明快扁平</a>
+</div>
+<table id="js_layoutTable" width="100%" height="*" border="0" cellspacing="0" cellpadding="0" class="js_layoutTable">
+  <tr>
+    <td height="60"><table id="_TableHeader" width="100%" border="0" cellpadding="0"
+		cellspacing="0" class="deepBg">
+        <tr>
+          <td width="217" height="60" valign="middle"><img onClick="location.reload();" id="logo" class="logo_zh-cn" src="product/images/logo_zh-cn.png" onload="var w=this.clientWidth+'px',h=this.clientHeight+'px';this.style.width=w;this.style.height=h;this.onload=null;this.src='framework/images/blank.gif';" />
+            <div style="display:none; float:left; background:url(images/selectsitebg.gif) no-repeat right top; color:#666666; padding:6px 23px 0 10px; margin-bottom:-2px;"> </div></td>
+          <td><div class="loginInfo"><span class="loginInfo_welcom">当前用户 : <b> {$username}</b> 
+		  <a href="javascript:void(0);" id="skinSelector" title="主题"><img src="icons/icon403a7.gif"></a>
+		  <vt:if var="Priv.System" value="TRUE" ><a href="javascript:void(0)" onclick="document.getElementById('_Menu_Platform.System').click();"><img src="icons/icon023a1.gif"></a></vt:if>
+		  <!--<a href="javascript:void(0);" onClick="getMessage();return false;" title="短消息"><img src="framework/images/blank.gif" class="icon icon_msg"><span id="MsgCount">0</span></a>-->
+		  <a href="javascript:void(0);" onClick="openSettingTabs();return false;" title="修改登录密码">改密码</a>
+		  
+		  <!--a href="javascript:void(0);" onClick="openSettingTabs();return false;" title="个人设置"><img src="icons/icon023a1.gif"></a-->
+		  
+		  
+		  |  <a href="javascript:void(0)" onClick="Application.logout(); ">退出</a>
+		  <br />
+
+		   <!--服务器缓存|  <a href="javascript:void(0)" onclick="javascript:ClearCache(); return false;">立即清除</a>-->   <br />上次程序更新   {$ProgramLastUpdate format="yyyy-MM-dd HH:mm:ss"} 	  
+              <script type="text/javascript">
+ Page.onLoad(function(){
+			
+			/*
+			var fe = ComponentManager.getByDom('Site','Combox').addListener('focus',function(){
+				var url = this.url.split("?")[0];
+				url = url+"?ran="+new Date().getTime();
+				var fe = this.innerWin && this.innerWin.frameElement;
+				if(fe){
+					fe.src=url;
+				}
+			})
+			*/
+		})
+</script> 
+              <span>
+              </span> </span></div>
+            <div id="_Navigation" class="navigation">
+			 <vt:if var="Priv.Agent" value="TRUE" >
+			 <a id='_Menu_Platform.Agent' menuid="Platform.Agent" onclick='return false;' url="" hidefocus='true'><b>业务管理</b></a>
+			 <vt:else />
+			<vt:if var="Priv.NewMerchant" value="TRUE"><a id='_Menu_Workspace.MainMenu' menuid="Workspace.MainMenu" onclick='return false;' url="" hidefocus='true'><b>直联入网</b></a></vt:if>
+			<vt:if var="Priv.QrBarPay" value="TRUE"><a id='_Menu_ContentCore.EctWorkSpace' menuid="ContentCore.EctWorkSpace" onclick='return false;' url="" hidefocus='true'> <b>条码付<span id="EctCount" class="count_tip">0</span></b></a></vt:if>
+			<vt:if var="Priv.AbcMerchant" value="TRUE"><a id='_Menu_ContentCore.AbcWorkSpace' menuid="ContentCore.AbcWorkSpace" onclick='return false;' url="" hidefocus='true'> <b>农行<span id="AbcCount" class="count_tip">0</span></b></a></vt:if>
+			
+			<vt:if var="Priv.CcbMerchant" value="TRUE"><a id='_Menu_ContentCore.CcbWorkSpace' menuid="ContentCore.CcbWorkSpace" onclick='return false;' url="" hidefocus='true'> <b>建行<span id="CcbCount" class="count_tip">0</span></b></a></vt:if>
+			<vt:if var="Priv.BcmMerchant" value="TRUE"><a id='_Menu_ContentCore.BcmWorkSpace' menuid="ContentCore.BcmWorkSpace" onclick='return false;' url="" hidefocus='true'> <b>交行<span id="BcmCount" class="count_tip">0</span></b></a></vt:if>
+
+
+			<vt:if var="Priv.Merchant" value="TRUE"><a id='_Menu_ContentCore.UPWorkSpace' menuid="ContentCore.UPWorkSpace" onclick='return false;' url="" hidefocus='true'> <b>直联</b></a></vt:if> 
+			
+			<vt:if var="Priv.Store" value="TRUE"><a id='_Menu_MainMenus.AdminWorkspace' menuid="MainMenus.AdminWorkspace" onclick='return false;' url="" hidefocus='true'><b>库存</b></a></vt:if>
+			<vt:if var="Priv.Service" value="TRUE"><a id='_Menu_MainMenus.ClientService' menuid="MainMenus.ClientService" onclick='return false;' url="" hidefocus='true'><b>客服<span id="ServiceCount" class="count_tip">0</span></b></a></vt:if> 
+			<vt:if var="Priv.Finance" value="TRUE"><a id='_Menu_MainMenus.Modules' menuid="MainMenus.Modules" onclick='return false;' url="" hidefocus='true'><b>财务</b></a></vt:if>
+			
+			<vt:if var="Priv.Office" value="TRUE"><a id='_Menu_Workspace.Office' menuid="Workspace.Office" onclick='return false;' url="" hidefocus='true'><b>行政<span id="ApplyAuditCount" class="count_tip">0</span></b></a></vt:if>
+
+              <!--a id='_Menu_MainMenus.MemberManager' menuid="MainMenus.MemberManager" onclick='return false;' url="" hidefocus='true'><b>会员管理</b></a--> 
+            <vt:if var="Priv.Static" value="TRUE"><a id='_Menu_MainMenus.Stat' menuid="MainMenus.Stat" onclick='return false;' url="" hidefocus='true'><b>统计</b></a></vt:if> 
+              <!--a id='_Menu_MainMenus.DataChannel' menuid="MainMenus.DataChannel" onclick='return false;' url="" hidefocus='true'><b>数据通道</b></a--> 	  
+             <vt:if var="Priv.System" value="TRUE" ><a id='_Menu_Platform.System' menuid="Platform.System" onclick='return false;' url="" hidefocus='true' style="display:none"><b>系统管理</b></a></vt:if>
+
+			 <vt:if var="Priv.BANKCCB" value="TRUE"><a id='_Menu_Platform.CCB' menuid="Platform.CCB" onclick='return false;' url="" hidefocus='true'> <b>中国建设银行</b></a></vt:if>
+
+			 </vt:if>  </div>
+        </tr>
+      </table></td>
+  </tr>
+  <tr>
+    <td height="*" class="mainArea"><table width="100%" id="js_layoutTable2" border="0" cellspacing="0" cellpadding="0" height="100%" class="js_layoutTable" style="table-layout:auto\9;*table-layout:fixed;">
+        <!-- ie8下{$Priv.System}tableLayout为fixed的表格，就算是隐藏单元格也占有宽度，所以这个表格在ie8下tableLayout设为auto，使可以正常隐藏侧栏 -->
+        <tr valign="top">
+          <td width="160" height="100%" class="leftColumnWrap" id="leftColumnWrap"><table width="100%" id="leftColumn" border="0" cellspacing="0" cellpadding="0" class="">
+              <tr>
+                <td height="37"><div class="z-toolbar no_text_btn">
+                    <div class="z-toolbar-ct">
+                      <div class="z-toolbar-overflow">
+                        <div class="z-toolbar-nowrap"> <a href='/main/index.aspx' target='_blank' ztype='button' buttontype='link' id='btn_sitepreview' class='z-btn z-btn-flat' onselectstart='return false'><img class="icon040a15" src="icons/icon000.png" _title="业务管理2" /><b><i></i></b></a><script> new Zving.Button('btn_sitepreview');</script> 
+                          
+						  <!--a href='javascript:void(0);' ztype='button' buttontype='push' id='btn_goworkspace' class='z-btn z-btn-flat' onselectstart='return false' onclick="gotoEditWorkSpace();return false;"><img class="icon003a1" src="icons/icon000.png" _title="商户管理" /><b><i></i></b></a><script> new Zving.Button('btn_goworkspace');</script--> 
+                          <script>
+	$('#btn_sitepreview, #btn_goworkspace').hover(function(){
+      Tip.show(this,{msg:this.firstChild.getAttribute('_title'),clock:11});
+  },
+  function(){
+  	Tip.close(this)
+  })
+</script> 
+                        </div>
+                      </div>
+                    </div>
+                  </div></td>
+              </tr>
+              <tr valign="top">
+                <td height="*"><div id="_sideNavigation">
+                    <ul id="_Child_Menu_Workspace.MainMenu" class="sideNavigation" style="display:none">
+                      <vt:if var="Priv.NewMerchantInput" value="TRUE"><li><a class="" href="/merchants/Add.aspx" menuid="Merchant.Add"><b><img src="icons/icon000.png" class="icon003a9" />商户录入</b></a> </li></vt:if>
+                      <vt:if var="Priv.NewMerchantBankCheck" value="TRUE"><li><a class="" href="/merchants/list.aspx?status=ToBank" menuid="Merchant.List0"><b><img src="icons/icon000.png" class="icon400a9" />待提交银行<span id="ToBankCount" class="count_tip">0</span></b></a>   </li></vt:if>
+                      <vt:if var="Priv.NewMerchantRiskCheck" value="TRUE"><li><a class="" href="/merchants/list.aspx?status=RiskCheck" menuid="Workspace.VisualPage"><b><img src="icons/extra/icon_board.gif" />待风控审核<span id="RiskCheckCount" class="count_tip">0</span></b></a> </li></vt:if>
+                      <vt:if var="Priv.NewMerchantUnionCheck" value="TRUE"><li><a class="" href="/merchants/list.aspx?status=ToUnionpay" menuid="Workspace.Blocks"><b><img src="icons/icon000.png" class="icon026a17" />待提交银联<span id="ToUnionpayCount" class="count_tip">0</span></b></a> </li></vt:if>
+                      <vt:if var="Priv.NewMerchantPosCheck" value="TRUE"><li><a class="" href="/merchants/list.aspx?status=PosTest" menuid="Workspace.Widgets"><b><img src="icons/icon000.png" class="icon024a1" />机具待测试<span id="PosCheckCount" class="count_tip">0</span></b></a> </li></vt:if>
+                      
+					  <vt:if var="Priv.NewMerchantOutStock" value="TRUE"><li><a class="" href="/merchants/list.aspx?status=OutStock" menuid="Workspace.OutStock"><b><img src="icons/icon000.png" class="icon034a12" />机具待出库<span id="OutStockCount" class="count_tip">0</span></b></a> </li></vt:if>
+					  <vt:if var="Priv.NewMerchantSetup" value="TRUE"><li><a class="" href="/merchants/list.aspx?status=Setup" menuid="Workspace.Setup"><b><img src="icons/icon000.png" class="icon034a12" />机具待安装<span id="ToSetupCount" class="count_tip">0</span></b></a> </li></vt:if>
+					  <vt:if var="Priv.NewMerchantJoining" value="TRUE"><li><a class="" href="/merchants/list.aspx?status=Joining" menuid="Workspace.Joining"><b><img src="icons/icon000.png" class="icon034a12" />入网中商户<span id="JoiningCount" class="count_tip">0</span></b></a></li></vt:if>
+					  <vt:if var="Priv.NewMerchantDeleted" value="TRUE"><li><a class="" href="/merchants/list.aspx?status=Deleted" menuid="Workspace.Deleted"><b><img src="icons/icon000.png" class="icon034a12" />已删除商户</b></a></li></vt:if>
+					  
+
+                    </ul>
+                    <ul id="_Child_Menu_ContentCore.UPWorkSpace" class="sideNavigation" style="display:none">
+					<vt:if var="Priv.MerchantNormal" value="TRUE"><li><a class="" href="/merchants/list.aspx?status=Normal" menuid="ContentCore.Normal"><b><img src="icons/icon000.png" class="icon029a12" />直联存量商户</b></a> </li></vt:if>
+					<vt:if var="Priv.MerchantDeals" value="TRUE"><li><a class="" href="/reports/deals.aspx" menuid="Workspace.Deals"><b><img src="icons/icon000.png" class="icon010a1" />商户交易查询</b></a> </li>
+					<li><a class="" href="/reports/trans.aspx" menuid="Workspace.Trans"><b><img src="icons/icon000.png" class="icon010a1" />商户交易流水</b></a> </li>
+					</vt:if>
+
+<vt:if var="Priv.NewMerchantPosYajinReceived" value="TRUE"><li><a class="" href="/merchants/list.aspx?status=PosLose" menuid="Workspace.PosLose"><b><img src="icons/icon000.png" class="icon003a26" />撤机异常商户<span id="PosLoseCount" class="count_tip">0</span></b></a> </li></vt:if>
+
+					<vt:if var="Priv.MechantRevokeCheck" value="TRUE"><li><a class="" href="/merchants/list.aspx?status=RevokeCheck" menuid="Workspace.RevokeCheck"><b><img src="icons/icon000.png" class="icon003a26" />撤机待运维审核<span id="RevokeCheckCount" class="count_tip">0</span></b></a> </li></vt:if>
+					<vt:if var="Priv.MechantRevokeYajin" value="TRUE"><li><a class="" href="/merchants/list.aspx?status=RevokeYajin" menuid="Workspace.RevokeYajin"><b><img src="icons/icon000.png" class="icon003a26" />待财务押金核实<span id="RevokeYajinCount" class="count_tip">0</span></b></a> </li></vt:if>
+					<vt:if var="Priv.MechantRevokeInquiry" value="TRUE"><li><a class="" href="/merchants/list.aspx?status=RevokeInquiry" menuid="Workspace.RevokeInquiry"><b><img src="icons/icon000.png" class="icon003a26" />撤机待客服回访<span id="RevokeInquiryCount" class="count_tip">0</span></b></a> </li></vt:if>
+					<vt:if var="Priv.MechantYajinRepay" value="TRUE"><li><a class="" href="/merchants/list.aspx?status=YajinRepay" menuid="Workspace.YajinRepay"><b><img src="icons/icon000.png" class="icon003a26" />撤机待退押金<span id="YajinRepayCount" class="count_tip">0</span></b></a> </li></vt:if>
+					<vt:if var="Priv.RevokeToBank" value="TRUE"><li><a class="" href="/merchants/list.aspx?status=RevokeToBank" menuid="Workspace.RevokeToBank"><b><img src="icons/icon000.png" class="icon003a26" />待送银行注销<span id="RevokeToBankCount" class="count_tip">0</span></b></a> </li></vt:if>
+					<vt:if var="Priv.Revoking" value="TRUE"><li><a class="" href="/merchants/list.aspx?status=Revoking" menuid="Workspace.Revoking"><b><img src="icons/icon000.png" class="icon003a26" />撤机中商户<span id="RevokingCount" class="count_tip">0</span></b></a> </li></vt:if>				
+					<vt:if var="Priv.MerchantRemoved" value="TRUE"><li><a class="" href="/merchants/list.aspx?status=Revoked" menuid="Workspace.Removed"><b><img src="icons/icon000.png" class="icon003a26" />已撤机商户</b></a> </li></vt:if>
+					<vt:if var="Priv.MerchantRemoved" value="TRUE"><li><a class="" href="/merchants/revoke_term.aspx" menuid="Workspace.TermRemoved"><b><img src="icons/icon000.png" class="icon003a26" />已撤终端</b></a> </li></vt:if>
+
+					<vt:if var="Priv.MerchantNormal" value="TRUE"><li><a class="" href="/unionpay/task001_list.aspx" menuid="Workspace.UnionPayTask001"><b><img src="icons/icon000.png" class="icon003a26" />银联贴标巡检Ⅰ期</b></a> </li></vt:if>
+					<vt:if var="Priv.MerchantNormal" value="TRUE"><li><a class="" href="/unionpay/task002_list.aspx" menuid="Workspace.UnionPayTask002"><b><img src="icons/icon000.png" class="icon003a26" />银联贴标巡检Ⅱ期</b></a> </li></vt:if>
+
+                    </ul>
+
+					<ul id="_Child_Menu_ContentCore.EctWorkSpace" class="sideNavigation" style="display:none">
+                      <vt:if var="Priv.QrBarPayInput" value="TRUE"><li><a class="" href="/MerchantsEcitic/Add.aspx" menuid="MerchantsEcitic.Add"><b><img src="icons/icon000.png" class="icon003a9" />商户录入</b></a> </li></vt:if>
+					  <vt:if var="Priv.QrBarPayRiskCheck" value="TRUE"><li><a class="" href="/MerchantsEcitic/list.aspx?status=RiskCheck" menuid="MerchantsEcitic.RiskCheck"><b><img src="icons/extra/icon_board.gif" />待风控审核<span id="EctRiskCheckCount" class="count_tip">0</span></b></a> </li></vt:if>
+					  <vt:if var="Priv.QrBarPayBankCheck" value="TRUE"><li><a class="" href="/MerchantsEcitic/list.aspx?status=ToBank" menuid="MerchantsEcitic.ToBank"><b><img src="icons/icon000.png" class="icon400a9" />待提交收单行<span id="ToEctBankCount" class="count_tip">0</span></b></a>   </li></vt:if>
+					  <vt:if var="Priv.QrBarPaySetup" value="TRUE"><li><a class="" href="/MerchantsEcitic/list.aspx?status=Setup" menuid="MerchantsEcitic.Setup"><b><img src="icons/extra/icon_board.gif" />待安装商户<span id="RiskCheckEctCount" class="count_tip">0</span></b></a> </li></vt:if>
+					 
+						<vt:if var="Priv.QrBarPayNormal" value="TRUE"><li><a class="" href="/MerchantsEcitic/list.aspx?status=Joining" menuid="MerchantsEcitic.Joining"><b><img src="icons/icon000.png" class="icon029a12" />入网中商户</b></a> </li></vt:if>
+						 <vt:if var="Priv.QrBarPayNormal" value="TRUE"><li><a class="" href="/MerchantsEcitic/list.aspx?status=Normal" menuid="MerchantsEcitic.Normal"><b><img src="icons/icon000.png" class="icon029a12" />已安装商户</b></a> </li></vt:if>
+
+						<vt:if var="Priv.QrBarPayNormal" value="TRUE"><li><a class="" href="/MerchantsEcitic/list.aspx?status=Risked" menuid="MerchantsEcitic.Risked"><b><img src="icons/icon000.png" class="icon029a12" />风险商户</b></a> </li></vt:if>
+
+						
+
+					  <vt:if var="Priv.QrBarPayDeleted" value="TRUE"><li><a class="" href="/MerchantsEcitic/list.aspx?status=Deleted" menuid="MerchantsEcitic.Deleted"><b><img src="icons/icon000.png" class="icon034a12" />已删除商户</b></a></li></vt:if>
+					   <vt:if var="Priv.QrBarPayNormal" value="TRUE"><li><a class="" href="/MerchantsEcitic/jysj_list.aspx" menuid="MerchantsEcitic.Blocks"><b><img src="icons/icon000.png" class="icon026a17" />交易查询</b></a> </li></vt:if>
+					   <vt:if var="Priv.QrBarPayDeals" value="TRUE"><li><a class="" href="/MerchantsEcitic/deals.aspx" menuid="MerchantsEcitic.Deals"><b><img src="icons/icon000.png" class="icon026a17" />交易统计</b></a> </li></vt:if>
+					   <vt:if var="Priv.AbcMerchantQR" value="TRUE"><li><a class="" href="/ccbank/qr_list.aspx" menuid="ContentCore.CcbankQr"><b><img src="icons/icon000.png" class="icon029a12" />银联小微商户</b></a> </li></vt:if>
+
+<vt:if var="Priv.AbcMerchantQR" value="TRUE"><li><a class="" href="/MerchantsEcitic/daojia_list.aspx" menuid="ContentCore.DaoJia"><b><img src="icons/icon000.png" class="icon029a12" />绿洲到家商户</b></a> </li></vt:if>
+
+						<vt:if var="Priv.QrBarPayQrs" value="TRUE"><li><a class="" href="/qr/list.aspx" menuid="ContentCore.QrBarPayQrs"><b><img src="icons/icon000.png" class="icon029a12" />二维码平台</b></a> </li></vt:if>
+						<vt:if var="Priv.QrBarPayQrs" value="TRUE"><li><a class="" href="/aispeaker/list.aspx" menuid="ContentCore.AISpeaker"><b><img src="icons/icon000.png" class="icon029a12" />智能音箱平台</b></a> </li></vt:if>
+						<vt:if var="Priv.QrBarPayQrs" value="TRUE"><li><a class="" href="/inspirypos/list.aspx" menuid="ContentCore.InspiryPos"><b><img src="icons/icon000.png" class="icon029a12" />七寸屏设备</b></a> </li></vt:if>
+                    </ul>
+
+
+					<ul id="_Child_Menu_ContentCore.AbcWorkSpace" class="sideNavigation" style="display:none">
+                      
+					 <vt:if var="Priv.AbcMerchantQR" value="TRUE"><li><a class="" href="/abchina/qr_list.aspx" menuid="ContentCore.AbchinaQr"><b><img src="icons/icon000.png" class="icon029a12" />农行贴码商户</b></a> </li></vt:if>
+					 <vt:if var="Priv.AbcMerchantNormal" value="TRUE"><li><a class="" href="/merchantsabc/list.aspx?status=Setup" menuid="ContentCore.Abcmerchant.Setup"><b><img src="icons/icon000.png" class="icon029a12" />间联待安装商户<span id="AbcSetupCount" class="count_tip">0</span></b></a> </li></vt:if>
+					  <vt:if var="Priv.AbcMerchantNormal" value="TRUE"><li><a class="" href="/merchantsabc/list.aspx?status=Normal" menuid="ContentCore.Abcmerchant"><b><img src="icons/icon000.png" class="icon029a12" />间联待审核商户</b></a> </li></vt:if>
+					  <vt:if var="Priv.AbcMerchantNormal" value="TRUE"><li><a class="" href="/merchantsabc/list.aspx?status=Passed" menuid="ContentCore.AbcmerchantPass"><b><img src="icons/icon000.png" class="icon029a12" />审核已通过商户</b></a> </li></vt:if>
+
+					   <vt:if var="Priv.AbcMerchantNormal" value="TRUE"><li><a class="" href="/merchantsabc/exp_list.aspx" menuid="ContentCore.AbcmerchantExp"><b><img src="icons/icon000.png" class="icon029a12" />异常上报商户</b></a> </li></vt:if>
+
+
+
+					 <vt:if var="Priv.AbcMerchantNormal" value="TRUE">
+						<li><a class="" href="/merchantsabcdeal/list.aspx" menuid="Workspace.AbcDeals"><b><img src="icons/icon000.png" class="icon010a1" />商户交易查询</b></a> </li>
+					 </vt:if>
+					<vt:if var="Priv.AbcMerchantNormal" value="TRUE"><li><a class="" href="/merchantstelabc/list.aspx?status=Normal" menuid="ContentCore.AbcTelmerchant"><b><img src="icons/icon000.png" class="icon029a12" />农行智付通商户</b></a> </li></vt:if>
+					
+					<vt:if var="Priv.AbcMerchantRemoved" value="TRUE"><li><a class="" href="/merchantsabc/list.aspx?status=Risked" menuid="ContentCore.AbcmerchantRisked"><b><img src="icons/icon000.png" class="icon029a12" />待送银行注销</b></a> </li></vt:if>
+
+					<vt:if var="Priv.AbcMerchantRemoved" value="TRUE"><li><a class="" href="/merchantsabc/list.aspx?status=Revoked" menuid="ContentCore.AbcmerchantRevoked"><b><img src="icons/icon000.png" class="icon029a12" />已撤机商户</b></a> </li></vt:if>
+					<vt:if var="Priv.AbcMerchantDeleted" value="TRUE"><li><a class="" href="/merchantsabc/list.aspx?status=Deleted" menuid="ContentCore.AbcmerchantDeled"><b><img src="icons/icon000.png" class="icon029a12" />已删除商户</b></a> </li></vt:if>
+
+
+					 <vt:if var="Priv.AbcCommissionManage" value="TRUE"><li><a class="" href="/merchantsabc/inquiry_list.aspx" menuid="ContentCore.AbcmerchantInquiry"><b><img src="icons/icon000.png" class="icon029a12" />商户客服咨询<span id="AbcCommissionCount" class="count_tip">0</span></b></a> </li><vt:else />
+					  <vt:if var="Priv.AbcCommission" value="TRUE"><li><a class="" href="/merchantsabc/inquiry_list.aspx?type=commission" menuid="ContentCore.AbcmerchantCommission"><b><img src="icons/icon000.png" class="icon029a12" />商户客服工单<span id="AbcCommissionCount" class="count_tip">0</span></b></a> </li></vt:if>
+					  </vt:if>
+
+					 <vt:if var="Priv.AbcMerchantNeedVisit" value="TRUE"><li><a class="" href="/MerchantsAbc/need_visit.aspx" menuid="MerchantsAbc.NeedVisit"><b><img src="icons/icon000.png" class="icon029a4" />待巡检商户</b></a> </li></vt:if>
+					 <vt:if var="Priv.AbcVisitCommission" value="TRUE"><li><a class="" href="/MerchantsAbc/visit_ticket_list.aspx" menuid="MerchantsAbc.NeedVisitTicket"><b><img src="icons/icon000.png" class="icon029a4" />商户巡检工单</b></a> </li></vt:if>
+					 <vt:if var="Priv.AbcVisitCommission" value="TRUE"><li><a class="" href="/MerchantsAbc/visit_ticket_list.aspx?history=true" menuid="MerchantsAbc.NeedVisitTicket2"><b><img src="icons/icon000.png" class="icon029a4" />历史巡检工单</b></a> </li></vt:if>
+					  <vt:if var="Priv.AbcMerchantVisitLogs" value="TRUE"><li><a class="" href="/MerchantsAbc/visit_list.aspx" menuid="MerchantsAbc.VisitList"><b><img src="icons/icon000.png" class="icon010a1" />商户巡检记录</b></a> </li></vt:if>
+                    </ul>
+
+
+
+
+					<ul id="_Child_Menu_ContentCore.CcbWorkSpace" class="sideNavigation" style="display:none">
+					
+                      <vt:if var="Priv.CcbMerchantNormal" value="TRUE"><li><a class="" href="/merchantsccb/list.aspx?status=Setup" menuid="ContentCore.Ccbmerchant.Setup"><b><img src="icons/icon000.png" class="icon029a12" />间联待安装商户<span id="CcbSetupCount" class="count_tip">0</span></b></a> </li></vt:if>
+					  <vt:if var="Priv.CcbMerchantNormal" value="TRUE"><li><a class="" href="/merchantsccb/list.aspx?status=Normal" menuid="ContentCore.Ccbmerchant"><b><img src="icons/icon000.png" class="icon029a12" />待风控审核</b></a> </li></vt:if>
+					  <vt:if var="Priv.CcbMerchantNormal" value="TRUE"><li><a class="" href="/merchantsccb/list.aspx?status=Passed" menuid="ContentCore.CcbmerchantPass"><b><img src="icons/icon000.png" class="icon029a12" />审核已通过商户</b></a> </li></vt:if>
+					  <!-- var="Priv.CcbMerchantNormal" value="TRUE"><li><a class="" href="/merchantsccb/list.aspx?status=NoPassed" menuid="ContentCore.CcbmerchantNoPass"><b><img src="icons/icon000.png" class="icon029a12" />审核未通过商户<span id="CcbNoPassCount" class="count_tip">0</span></b></a> </li></-->
+
+<vt:if var="Priv.CcbMerchantNormal" value="TRUE"><li><a class="" href="/merchantsccb/exp_list.aspx" menuid="ContentCore.CcbmerchantExp"><b><img src="icons/icon000.png" class="icon029a12" />异常上报商户</b></a> </li></vt:if>
+
+					  <vt:if var="Priv.CcbMerchantNormal" value="TRUE">
+						<li><a class="" href="/merchantsccbdeal/list.aspx" menuid="Workspace.CcbDeals"><b><img src="icons/icon000.png" class="icon010a1" />商户交易查询</b></a> </li>
+					  </vt:if>
+<vt:if var="Priv.CcbMerchantRemoved" value="TRUE"><li><a class="" href="/merchantsccb/list.aspx?status=Risked" menuid="ContentCore.CcbmerchantRisked"><b><img src="icons/icon000.png" class="icon029a12" />待送银行注销</b></a> </li></vt:if>
+					<vt:if var="Priv.CcbMerchantRemoved" value="TRUE"><li><a class="" href="/merchantsccb/list.aspx?status=Revoked" menuid="ContentCore.CcbmerchantRevoked"><b><img src="icons/icon000.png" class="icon029a12" />已撤机商户</b></a> </li></vt:if>
+
+					<vt:if var="Priv.CcbMerchantDeleted" value="TRUE"><li><a class="" href="/merchantsccb/list.aspx?status=Deleted" menuid="ContentCore.CcbmerchantDeled"><b><img src="icons/icon000.png" class="icon029a12" />已删除商户</b></a> </li></vt:if>
+
+					 <vt:if var="Priv.AbcCommissionManage" value="TRUE"><li><a class="" href="/merchantsccb/inquiry_list.aspx" menuid="ContentCore.CcbmerchantInquiry"><b><img src="icons/icon000.png" class="icon029a12" />商户客服咨询<span id="CcbCommissionCount" class="count_tip">0</span></b></a> </li><vt:else />
+					  <vt:if var="Priv.CcbCommission" value="TRUE"><li><a class="" href="/merchantsccb/inquiry_list.aspx?type=commission" menuid="ContentCore.CcbmerchantCommission"><b><img src="icons/icon000.png" class="icon029a12" />商户客服工单<span id="CcbCommissionCount" class="count_tip">0</span></b></a> </li></vt:if>
+					  </vt:if>
+					 <vt:if var="Priv.CcbMerchantNeedVisit" value="TRUE"><li><a class="" href="/MerchantsCcb/need_visit.aspx" menuid="MerchantsCcb.NeedVisit"><b><img src="icons/icon000.png" class="icon029a4" />待巡检商户</b></a> </li></vt:if>
+					 <vt:if var="Priv.CcbVisitCommission" value="TRUE"><li><a class="" href="/MerchantsCcb/visit_ticket_list.aspx" menuid="MerchantsCcb.NeedVisitTicket"><b><img src="icons/icon000.png" class="icon029a4" />商户巡检工单</b></a> </li></vt:if>
+					 <vt:if var="Priv.CcbVisitCommission" value="TRUE"><li><a class="" href="/MerchantsCcb/visit_ticket_list.aspx?history=true" menuid="MerchantsCcb.NeedVisitTicket2"><b><img src="icons/icon000.png" class="icon029a4" />历史巡检工单</b></a> </li></vt:if>
+					  <vt:if var="Priv.CcbMerchantVisitLogs" value="TRUE"><li><a class="" href="/MerchantsCcb/visit_list.aspx" menuid="MerchantsCcb.VisitList"><b><img src="icons/icon000.png" class="icon010a1" />商户巡检记录</b></a> </li></vt:if>
+                    </ul>
+
+					<ul id="_Child_Menu_ContentCore.BcmWorkSpace" class="sideNavigation" style="display:none">
+                      <vt:if var="Priv.BcmMerchantNormal" value="TRUE"><li><a class="" href="/merchantsbcm/list.aspx?status=Setup" menuid="ContentCore.Bcmmerchant.Setup"><b><img src="icons/icon000.png" class="icon029a12" />间联待安装商户<span id="BcmSetupCount" class="count_tip">0</span></b></a> </li></vt:if>
+					  <vt:if var="Priv.BcmMerchantNormal" value="TRUE"><li><a class="" href="/merchantsbcm/list.aspx?status=Normal" menuid="ContentCore.Bcmmerchant"><b><img src="icons/icon000.png" class="icon029a12" />待风控审核</b></a> </li></vt:if>
+					  <vt:if var="Priv.BcmMerchantNormal" value="TRUE"><li><a class="" href="/merchantsbcm/list.aspx?status=Passed" menuid="ContentCore.BcmmerchantPass"><b><img src="icons/icon000.png" class="icon029a12" />审核已通过商户</b></a> </li></vt:if>
+					  <!-- var="Priv.BcmMerchantNormal" value="TRUE"><li><a class="" href="/merchantsbcm/list.aspx?status=NoPassed" menuid="ContentCore.BcmmerchantNoPass"><b><img src="icons/icon000.png" class="icon029a12" />审核未通过商户<span id="BcmNoPassCount" class="count_tip">0</span></b></a> </li></-->
+
+<vt:if var="Priv.BcmMerchantNormal" value="TRUE"><li><a class="" href="/merchantsbcm/exp_list.aspx" menuid="ContentCore.BcmmerchantExp"><b><img src="icons/icon000.png" class="icon029a12" />异常上报商户</b></a> </li></vt:if>
+
+					  <vt:if var="Priv.BcmMerchantNormal" value="TRUE">
+						<li><a class="" href="/merchantsbcmdeal/list.aspx" menuid="Workspace.BcmDeals"><b><img src="icons/icon000.png" class="icon010a1" />商户交易查询</b></a> </li>
+					  </vt:if>
+
+					<vt:if var="Priv.BcmMerchantRemoved" value="TRUE"><li><a class="" href="/merchantsbcm/list.aspx?status=Risked" menuid="ContentCore.BcmmerchantRisked"><b><img src="icons/icon000.png" class="icon029a12" />待送银行注销</b></a> </li></vt:if>
+					<vt:if var="Priv.BcmMerchantRemoved" value="TRUE"><li><a class="" href="/merchantsbcm/list.aspx?status=Revoked" menuid="ContentCore.BcmmerchantRevoked"><b><img src="icons/icon000.png" class="icon029a12" />已撤机商户</b></a> </li></vt:if>
+
+					<vt:if var="Priv.BcmMerchantDeleted" value="TRUE"><li><a class="" href="/merchantsbcm/list.aspx?status=Deleted" menuid="ContentCore.BcmmerchantDeled"><b><img src="icons/icon000.png" class="icon029a12" />已删除商户</b></a> </li></vt:if>
+
+					 <vt:if var="Priv.AbcCommissionManage" value="TRUE"><li><a class="" href="/merchantsbcm/inquiry_list.aspx" menuid="ContentCore.BcmmerchantInquiry"><b><img src="icons/icon000.png" class="icon029a12" />商户客服咨询<span id="BcmCommissionCount" class="count_tip">0</span></b></a> </li><vt:else />
+					  <vt:if var="Priv.BcmCommission" value="TRUE"><li><a class="" href="/merchantsbcm/inquiry_list.aspx?type=commission" menuid="ContentCore.BcmmerchantCommission"><b><img src="icons/icon000.png" class="icon029a12" />商户客服工单<span id="BcmCommissionCount" class="count_tip">0</span></b></a> </li></vt:if>
+					  </vt:if>
+					 <vt:if var="Priv.BcmMerchantNeedVisit" value="TRUE"><li><a class="" href="/MerchantsBcm/need_visit.aspx" menuid="MerchantsBcm.NeedVisit"><b><img src="icons/icon000.png" class="icon029a4" />待巡检商户</b></a> </li></vt:if>
+					 <vt:if var="Priv.BcmVisitCommission" value="TRUE"><li><a class="" href="/MerchantsBcm/visit_ticket_list.aspx" menuid="MerchantsBcm.NeedVisitTicket"><b><img src="icons/icon000.png" class="icon029a4" />商户巡检工单</b></a> </li></vt:if>
+					 <vt:if var="Priv.BcmVisitCommission" value="TRUE"><li><a class="" href="/MerchantsBcm/visit_ticket_list.aspx?history=true" menuid="MerchantsBcm.NeedVisitTicket2"><b><img src="icons/icon000.png" class="icon029a4" />历史巡检工单</b></a> </li></vt:if>
+					  <vt:if var="Priv.BcmMerchantVisitLogs" value="TRUE"><li><a class="" href="/MerchantsBcm/visit_list.aspx" menuid="MerchantsBcm.VisitList"><b><img src="icons/icon000.png" class="icon010a1" />商户巡检记录</b></a> </li></vt:if>
+                    </ul>
+
+
+                    <ul id="_Child_Menu_MainMenus.AdminWorkspace" class="sideNavigation" style="display:none">
+                      <vt:if var="Priv.Storage" value="TRUE"><li><a class="" href="/Storage/list.aspx" menuid="ContentCore.Storage"><b><img src="icons/icon000.png" class="icon038a6" />仓库管理</b></a> </li></vt:if>
+					  <vt:if var="Priv.GoodsType" value="TRUE"><li><a class="" href="/Stocktype/list.aspx" menuid="ContentCore.StockType"><b><img src="icons/icon000.png" class="icon038a6" />机具类别管理</b></a> </li></vt:if>
+					  <vt:if var="Priv.Stocks" value="TRUE"><li><a class="" href="/Stock/list.aspx" menuid="ContentCore.TemplateMenu"><b><img src="icons/icon000.png" class="icon038a6" />库存机具</b></a> </li></vt:if>
+					  <vt:if var="Priv.StockIn" value="TRUE"><li><a class="" href="/merchants/list.aspx?status=RevokeInStock" menuid="ContentCore.RemovedInStock"><b><img src="icons/icon000.png" class="icon029a12" />撤换机待入库<span id="RevokeInStockCount" class="count_tip">0</span></b></a> </li></vt:if>
+
+					  <vt:if var="Priv.StockIn" value="TRUE"><li><a class="" href="/merchants/list.aspx?status=Silence" menuid="ContentCore.Silence"><b><img src="icons/icon000.png" class="icon029a12" />高押金沉默商户</b></a> </li></vt:if>
+					  <vt:if var="Priv.StockIn" value="TRUE"><li><a class="" href="/merchants/list.aspx?status=RevokeInStocked" menuid="ContentCore.RemovedInStocked"><b><img src="icons/icon000.png" class="icon029a12" />撤换机已入库</b></a> </li></vt:if>
+					  <vt:if var="Priv.StockIn" value="TRUE"><li><a class="" href="/Stockin/list.aspx" menuid="ContentCore.StockIn"><b><img src="icons/icon000.png" class="icon029a12" />机具入库记录</b></a> </li></vt:if>
+					  <vt:if var="Priv.StockOut" value="TRUE"><li><a class="" href="/Pos/need_buildin.aspx" menuid="ContentCore.PosBuildin"><b><img src="icons/icon000.png" class="icon040a1" />机具灌装</b></a> </li></vt:if>
+                      <vt:if var="Priv.StockOut" value="TRUE"><li><a class="" href="/Stockout/list.aspx" menuid="ContentCore.StockOut"><b><img src="icons/icon000.png" class="icon040a1" />机具出库记录</b></a> </li></vt:if>
+                      <vt:if var="Priv.UnicomSims" value="TRUE"><li><a class="" href="/unicomp/sims.aspx" menuid="ContentCore.UnicomSims"><b><img src="icons/icon000.png" class="icon040a1" />联通流量卡管理</b></a> </li></vt:if>
+					  <vt:if var="Priv.UnicomSims" value="TRUE"><li><a class="" href="/cmcc/sims.aspx" menuid="ContentCore.CmccSims"><b><img src="icons/icon000.png" class="icon040a1" />移动流量卡管理</b></a> </li></vt:if>
+                      <!--li><a class="" href="wordmanage/wordTabs.zhtml" menuid="WordManage"><b><img src="icons/icon000.png" class="icon003a1" />机具回收站</b></a> </li-->
+                    </ul>
+
+                    <ul id="_Child_Menu_MainMenus.Modules" class="sideNavigation" style="display:none">
+                      <vt:if var="Priv.NewMerchantYajin" value="TRUE"><li><a class="" href="/merchants/list.aspx?status=PosYajin" menuid="Workspace.Comment"><b><img src="icons/icon000.png" class="icon034a12" />待开押金单</b></a> </li></vt:if>
+                      <vt:if var="Priv.NewMerchantPosYajinReceiv" value="TRUE"><li><a class="" href="/merchants/list.aspx?status=PosYajinReceiv" menuid="Weixin.Manage1"><b><img src="icons/icon000.png" class="icon405a1" />机具待收押金</b></a> </li></vt:if>
+					  <vt:if var="Priv.NewMerchantPosYajinReceived" value="TRUE"><li><a class="" href="/merchants/list.aspx?status=PosYajinReceived" menuid="VoteManage2"><b><img src="icons/icon000.png" class="icon032a1" />机具已收押金</b></a> </li></vt:if>
+					   <vt:if var="Priv.NewMerchantPosYajinReceiv" value="TRUE"><li><a class="" href="/merchants/list.aspx?status=YajinRepay" menuid="Weixin.Manage3"><b><img src="icons/icon000.png" class="icon405a1" />机具待退押金</b></a> </li></vt:if>
+					  <vt:if var="Priv.NewMerchantPosYajinReceived" value="TRUE"><li><a class="" href="/merchants/list.aspx?status=YajinRepaid" menuid="VoteManage4"><b><img src="icons/icon000.png" class="icon032a1" />机具已退押金</b></a> </li></vt:if>
+					 <vt:if var="Priv.FinanceAccount" value="TRUE"><li><a class="" href="/Finance/account.aspx" menuid="VoteManage5"><b><img src="icons/icon000.png" class="icon032a1" />财务记账管理</b></a> </li></vt:if>
+					  <vt:if var="Priv.Salary" value="TRUE"><li><a class="" href="/Finance/Salary.aspx" menuid="SalaryManage5"><b><img src="icons/icon000.png" class="icon032a1" />员工工资管理</b></a> </li></vt:if>
+					  
+                    </ul>
+                    <ul id="_Child_Menu_MainMenus.MemberManager" class="sideNavigation" style="display:none">
+                    </ul>
+
+
+					<ul id="_Child_Menu_MainMenus.Stat" class="sideNavigation" style="display:none">
+					 <vt:if var="Priv.StaticNewMerchant" value="TRUE"><li><a class="" href="/Static/new_merch.aspx" menuid="Static.Merchant"><b><img src="icons/icon000.png" class="icon025a1" />商户入网统计</b></a> </li></vt:if>
+                      <vt:if var="Priv.StaticValid" value="TRUE"><li><a class="" href="/Static/valid.aspx" menuid="Static.Summary"><b><img src="icons/icon000.png" class="icon009a1" />商户达标统计</b></a> </li></vt:if>
+					  <vt:if var="Priv.PosInOut" value="TRUE">
+					  <li><a class="" href="/storage/inout.aspx" menuid="Member.Level"><b><img src="icons/icon000.png" class="icon401a16" />机具出入库统计</b></a> </li>
+					  </vt:if>
+					  <vt:if var="Priv.YaJinStats" value="TRUE">
+					  <li><a class="" href="/Finance/stats_list.aspx" menuid="Yajin.Stats"><b><img src="icons/icon000.png" class="icon401a16" />押金收取统计</b></a> </li>
+					  </vt:if>
+					  <vt:if var="Priv.StaticFinance" value="TRUE">
+					  <li><a class="" href="/Finance/branch_stats.aspx" menuid="Static.FinanceStats"><b><img src="icons/icon000.png" class="icon401a16" />财务收支统计</b></a> </li>
+					  </vt:if>
+					<vt:if var="Priv.StaticWorkKPI" value="TRUE">
+					  <li><a class="" href="/Static/kpi.aspx" menuid="Static.KPI"><b><img src="icons/icon000.png" class="icon401a16" />业务绩效统计</b></a> </li>
+					  </vt:if>
+					  <vt:if var="Priv.CostCheck" value="TRUE">
+					  <li><a class="" href="/Static/cost_check.aspx" menuid="Static.CostCheck"><b><img src="icons/icon000.png" class="icon401a16" />公司运营成本核算</b></a> </li>
+					   </vt:if>
+
+					  <vt:if var="username" value="李林明">
+					  <li><a class="" href="/deals/ranking.aspx" menuid="Static.DealStats"><b><img src="icons/icon000.png" class="icon401a16" />商户交易排行</b></a> </li>
+					  </vt:if>
+					  <vt:if var="Priv.StaticWorkKPI" value="TRUE">
+					  <li><a class="" href="/static/staff_kpi.aspx" menuid="Static.StaffKpi"><b><img src="icons/icon000.png" class="icon401a16" />员工工作量统计</b></a> </li>
+					  </vt:if>
+
+					  <vt:if var="Priv.StaticReports" value="TRUE">
+					  <li><a class="" href="/reports/custom.aspx" menuid="Static.StaticReports"><b><img src="icons/icon000.png" class="icon401a16" />数据报表查询</b></a> </li>
+					  </vt:if>
+
+					  
+
+					  <vt:if var="Priv.EctDealStatic" value="TRUE">
+					  <li><a class="" href="/Static/ect_merchant_deals2.aspx" menuid="Static.EctDealChannelReports"><b><img src="icons/icon000.png" class="icon401a16" />微信支付宝通道统计</b></a> </li>
+					  </vt:if>
+
+					  <vt:if var="Priv.EctDealStatic" value="TRUE">
+					  <li><a class="" href="/Static/ect_merchant_deals.aspx" menuid="Static.EctDealStaticReports"><b><img src="icons/icon000.png" class="icon401a16" />微信支付宝地区统计</b></a> </li>
+					  </vt:if>
+
+					  <vt:if var="Priv.EctDealStatic" value="TRUE">
+					  <li><a class="" href="/Static/ect_deals_rate.aspx" menuid="Static.EctDealStaticDayReports"><b><img src="icons/icon000.png" class="icon401a16" />微信支付宝按日统计</b></a> </li>
+					  </vt:if>
+
+                    </ul>
+
+                    <ul id="_Child_Menu_MainMenus.ClientService" class="sideNavigation" style="display:none">
+
+		 <vt:if var="Priv.ServiceInquiry" value="TRUE"><li><a class="" href="/Service/inquiry.aspx" menuid="Service.Inquiry"><b><img src="icons/icon000.png" class="icon025a1" />商户咨询</b></a> </li></vt:if>
+
+ <vt:if var="Priv.NewMchtConfirm" value="TRUE"><li><a class="" href="/merchants/list.aspx?status=MchtConfirm" menuid="Service.MchtConfirm"><b><img src="icons/icon000.png" class="icon009a1" />待电话查访新商户</b></a> </li></vt:if>
+  <vt:if var="Priv.NewMchtConfirmOK" value="TRUE"><li><a class="" href="/merchants/list.aspx?status=MchtConfirmOk" menuid="Service.MchtConfirmOK"><b><img src="icons/icon000.png" class="icon009a1" />电话查访成功商户</b></a> </li></vt:if>
+ <vt:if var="Priv.NewMchtConfirmFail" value="TRUE"><li><a class="" href="/merchants/list.aspx?status=MchtConfirmFail" menuid="Service.MchtConfirmFail"><b><img src="icons/icon000.png" class="icon009a1" />电话查访失败商户</b></a> </li></vt:if>
+
+		 <vt:if var="Priv.ServiceVisits" value="TRUE"><li><a class="" href="/Service/Visits.aspx" menuid="Service.Visits"><b><img src="icons/icon000.png" class="icon009a1" />商户回访</b></a> </li></vt:if>
+
+
+					  <vt:if var="Priv.ServiceCommission" value="TRUE"><li><a class="" href="/Service/inquiry.aspx?type=commission" menuid="Service.Commission"><b><img src="icons/icon000.png" class="icon009a1" />客服工单委派<span id="CommissionCount" class="count_tip">0</span></b></a> </li></vt:if>
+
+<vt:if var="Priv.MerchantNormal" value="TRUE"><li><a class="" href="/Mrecommend/list.aspx" menuid="Mrecommend.List"><b><img src="icons/icon000.png" class="icon009a1" />商户跟踪服务<span id="MrecommendCount" class="count_tip">0</span></b></a> </li></vt:if>
+
+<vt:if var="Priv.ServiceCommission" value="TRUE"><li><a class="" href="/Ticket/list.aspx" menuid="Service.InvalidList"><b><img src="icons/icon000.png" class="icon009a1" />促有效/撤机工单</b></a> </li></vt:if>
+
+
+					  <vt:if var="Priv.MerchantNeedVisit" value="TRUE"><li><a class="" href="/Merchants/need_visit.aspx" menuid="Merchants.NeedVisit"><b><img src="icons/icon000.png" class="icon029a4" />待巡检商户</b></a> </li></vt:if>
+					  <vt:if var="Priv.MerchantVisitLogs" value="TRUE"><li><a class="" href="/Merchants/visit_list.aspx" menuid="Merchants.VisitList"><b><img src="icons/icon000.png" class="icon010a1" />商户巡检记录</b></a> </li></vt:if>
+                    </ul>
+                    <ul id="_Child_Menu_MainMenus.DataChannel" class="sideNavigation" style="display:none">
+                      <li><a class="" href="dbgather/outerDataTab.zhtml" menuid="Gather.OuterData"><b><img src="icons/icon000.png" class="icon005a9" />外部数据</b></a> </li>
+                      <li><a class="" href="gather/fromWeb.zhtml" menuid="DataChannel.WebGather"><b><img src="icons/icon000.png" class="icon003a1" />从Web采集</b></a> </li>
+                      <li><a class="" href="contentadvance/publishPointList.zhtml" menuid="ContentAdvance.PublishPoint"><b><img src="icons/icon000.png" class="icon028a12" />发布点管理</b></a> </li>
+                      <li><a class="" href="dbgather/fromDB.zhtml" menuid="DataChannel.DataBaseGather"><b><img src="icons/icon000.png" class="icon005a13" />数据库采集</b></a> </li>
+                      <li><a class="" href="workspace/catalogMapping.zhtml" menuid="Workspace.CatalogMapping"><b><img src="icons/icon000.png" class="icon015a1" />内容一体化</b></a> </li>
+                      <li><a class="" href="contentcore/publishPlatform.zhtml" menuid="ContentCore.PublishPlatform"><b><img src="icons/icon000.png" class="icon003a26" />发布平台管理</b></a> </li>
+                    </ul>
+
+
+					<ul id="_Child_Menu_Workspace.Office" class="sideNavigation" style="display:none">
+					 <vt:if var="Priv.OfficeUnionPayFile" value="TRUE"><li><a class="" href="/Docs/list.aspx" menuid="Service.Inquiry"><b><img src="icons/icon000.png" class="icon025a1" />银联文件学习</b></a> </li></vt:if>
+					 <vt:if var="Priv.OfficeFile" value="TRUE"><li><a class="" href="/Docs/list.aspx?typ=policy" menuid="Service.OfficeFile"><b><img src="icons/icon000.png" class="icon025a1" />公司内部文件</b></a> </li></vt:if>
+					 <vt:if var="Priv.BankNets" value="TRUE"><li><a class="" href="/Banks/network.aspx" menuid="Service.BankNets"><b><img src="icons/icon000.png" class="icon025a1" />银行网点对接</b></a> </li></vt:if>
+                      <vt:if var="Priv.OfficeNotify" value="TRUE"><li><a class="" href="/Docs/notice_list.aspx" menuid="Service.Visits"><b><img src="icons/icon000.png" class="icon009a1" />公司通知公告</b></a> </li></vt:if>
+
+					  <vt:if var="Priv.System" value="TRUE" ><li><a class="" href="/Exam/question_cate_quest.aspx" menuid="Exam.Questions"><b><img src="icons/icon000.png" class="icon009a1" />考试题库管理</b></a> </li></vt:if>
+					  <vt:if var="Priv.System" value="TRUE" ><li><a class="" href="/Exam/paper_list.aspx" menuid="Exam.Test"><b><img src="icons/icon000.png" class="icon009a1" />在线考试管理</b></a> </li></vt:if>
+
+					  <vt:if var="Priv.AuditApply" value="TRUE"><li><a class="" href="/Auditflow/apply_list.aspx" menuid="AuditFlow.ApplyList"><b><img src="icons/icon000.png" class="icon009a1" />在线申请<span id="ApplyCount" class="count_tip">0</span></b></a> </li></vt:if>
+
+					  <vt:if var="Priv.ApplyAudit" value="TRUE"><li><a class="" href="/Auditflow/apply_list.aspx?typ=audit" menuid="AuditFlow.ApplyAudit"><b><img src="icons/icon000.png" class="icon009a1" />在线审批<span id="AuditCount" class="count_tip">0</span></b></a> </li></vt:if>
+					  		
+					  <vt:if var="Priv.OfficeReport" value="TRUE"><li><a class="" href="/Report/list.aspx" menuid="Office.Report"><b><img src="icons/icon000.png" class="icon018a1" />工作汇报(周月报)</b></a> </li></vt:if>
+					  
+					  <vt:if var="Priv.SalerSign" value="TRUE"><li><a class="" href="/Users/sign_list.aspx?typ=audit" menuid="Users.SignList"><b><img src="icons/icon000.png" class="icon009a1" />销售人员签到</b></a> </li></vt:if>
+                    </ul>
+
+                    <ul id="_Child_Menu_Platform.System" class="sideNavigation" style="display:none">
+                       <vt:if var="Priv.SystemInfo" value="TRUE"><li><a class="" href="/platform/systemInfo.aspx" menuid="Platform.SystemInfo"><b><img src="icons/icon000.png" class="icon023a1" />系统信息</b></a> </li></vt:if>
+                      <vt:if var="Priv.Branch" value="TRUE"><li><a class="" href="/platform/branches.aspx" menuid="Platform.Branch"><b><img src="icons/icon000.png" class="icon042a1" />组织机构</b></a> </li></vt:if>
+                      <vt:if var="Priv.Modules" value="TRUE"><li><a class="" href="/platform/priv_modules.aspx" menuid="Platform.Modules"><b><img src="icons/icon000.png" class="icon024a1" />权限模块管理</b></a> </li></vt:if>
+					  <vt:if var="Priv.Role" value="TRUE"><li><a class="" href="/platform/branch_role.aspx" menuid="Platform.Role"><b><img src="icons/icon000.png" class="icon025a1" />角色管理</b></a> </li></vt:if>
+                      <vt:if var="Priv.Users" value="TRUE"><li><a class="" href="/platform/users.aspx" menuid="Platform.User"><b><img src="icons/icon000.png" class="icon021a1" />用户管理</b></a> </li></vt:if>
+					  <vt:if var="Priv.Auditflow" value="TRUE"><li><a class="" href="/Auditflow/list.aspx" menuid="AuditFlow.List"><b><img src="icons/icon000.png" class="icon400a9" />审批流程管理</b></a> </li></vt:if>
+					  <li><a class="" href="/platform/dictions.aspx" menuid="Platform.Dictionary"><b><img src="icons/icon000.png" class="icon003a1" />字典管理</b></a> </li>
+    				  <!--
+					  <li><a class="" href="platform/code.zhtml" menuid="Platform.Code"><b><img src="icons/icon000.png" class="icon003a1" />代码管理</b></a> </li>
+                      <li><a class="" href="platform/config.zhtml" menuid="Platform.Config"><b><img src="icons/icon000.png" class="icon018a1" />配置项管理</b></a> </li>
+                      <li><a class="" href="platform/metaModel.zhtml" menuid="Platform.Metadata"><b><img src="icons/icon000.png" class="icon005a1" />元数据管理</b></a> </li>
+                      <li><a class="" href="platform/schedule.zhtml" menuid="Platform.Schedule"><b><img src="icons/icon000.png" class="icon020a1" />维护费导入</b></a> </li>
+                      <li><a class="" href="/Unionpay/union_data_import.aspx" menuid="Unionpay.Import"><b><img src="icons/icon000.png" class="icon010a1" />银联刷卡导入</b></a> </li>
+                      <li><a class="" href="platform/backup.zhtml" menuid="Platform.Backup"><b><img src="icons/icon000.png" class="icon005a17" />数据备份</b></a> </li> 
+					  -->
+					  <vt:if var="Priv.UnionpayDataImport" value="TRUE"><li><a class="" href="/Unionpay/union_data_import.aspx" menuid="Unionpay.Import"><b><img src="icons/icon000.png" class="icon010a1" />银联数据手动导入</b></a> </li></vt:if>
+                      <vt:if var="Priv.SystemLogs" value="TRUE"><li><a class="" href="/platform/err_logs.aspx" menuid="Platform.Log"><b><img src="icons/icon000.png" class="icon037a9" />系统日志</b></a> </li></vt:if>
+
+                    </ul>
+
+
+					<ul id="_Child_Menu_Platform.Agent" class="sideNavigation" style="display:none">
+						<vt:if var="Priv.SystemInfo" value="TRUE"><li><a class="" href="/platform/systemInfo.aspx" menuid="Platform.SystemInfo"><b><img src="icons/icon000.png" class="icon023a1" />系统信息</b></a> </li></vt:if>
+					   <li><a class="" href="/Docs/list.aspx?typ=agent" menuid="Service.Inquiry"><b><img src="icons/icon000.png" class="icon025a1" />经销商政策通知</b></a> </li>
+                       	<vt:if var="Priv.MerchantNormal" value="TRUE"><li><a class="" href="/merchants/list.aspx?status=Normal" menuid="ContentCore.Normal"><b><img src="icons/icon000.png" class="icon029a12" />直联存量商户</b></a> </li></vt:if>
+						<vt:if var="Priv.AbcMerchantQR" value="TRUE"><li><a class="" href="/ccbank/qr_list.aspx" menuid="ContentCore.CcbankQr"><b><img src="icons/icon000.png" class="icon029a12" />银联小微商户</b></a> </li></vt:if>
+					
+					<li><a class="" href="/MerchantsEcitic/Add.aspx" menuid="ContentCore.CcbankQr2"><b><img src="icons/icon000.png" class="icon029a12" />条码付商户录入</b></a> </li>
+					<li><a class="" href="/MerchantsEcitic/list.aspx?status=Setup" menuid="ContentCore.CcbankQr3"><b><img src="icons/icon000.png" class="icon029a12" />条码付待安装</b></a> </li>
+					<li><a class="" href="/MerchantsEcitic/list.aspx?status=Normal" menuid="ContentCore.CcbankQr4"><b><img src="icons/icon000.png" class="icon029a12" />条码付已安装</b></a> </li>
+					<li><a class="" href="/MerchantsEcitic/jysj_list.aspx" menuid="ContentCore.CcbankQr5"><b><img src="icons/icon000.png" class="icon029a12" />条码付交易查询</b></a> </li>
+
+						<vt:if var="Priv.MerchantNormal" value="TRUE"><li><a class="" href="/merchantsabc/list.aspx?status=Setup" menuid="ContentCore.Abcmerchant.Setup"><b><img src="icons/icon000.png" class="icon029a12" />农行待安装商户<span id="AbcSetupCount" class="count_tip">0</span></b></a> </li></vt:if>
+						<vt:if var="Priv.MerchantNormal" value="TRUE"><li><a class="" href="/merchantsabc/list.aspx?status=Joining" menuid="ContentCore.AbcNormal"><b><img src="icons/icon000.png" class="icon029a12" />农行间联商户</b></a> </li></vt:if>
+						<vt:if var="Priv.MerchantNormal" value="TRUE"><li><a class="" href="/merchantsccb/list.aspx?status=Setup" menuid="ContentCore.Ccbmerchant.Setup"><b><img src="icons/icon000.png" class="icon029a12" />建行待安装商户<span id="CcbSetupCount" class="count_tip">0</span></b></a> </li></vt:if>
+						<vt:if var="Priv.MerchantNormal" value="TRUE"><li><a class="" href="/merchantsccb/list.aspx?status=Joining" menuid="ContentCore.CcbNormal"><b><img src="icons/icon000.png" class="icon029a12" />建行间联商户</b></a> </li></vt:if>
+						<vt:if var="Priv.MerchantNormal" value="TRUE"><li><a class="" href="/MerchantsCcb/need_visit.aspx" menuid="ContentCore.CcbNeddVisite"><b><img src="icons/icon000.png" class="icon029a12" />建行待巡检商户</b></a> </li></vt:if>
+						
+						
+
+					   <vt:if var="Priv.MerchantDeals" value="TRUE">
+						<li><a class="" href="/reports/deals.aspx" menuid="Workspace.Deals"><b><img src="icons/icon000.png" class="icon010a1" />商户交易查询</b></a> </li>
+						<!--li><a class="" href="/reports/trans.aspx" menuid="Workspace.Trans"><b><img src="icons/icon000.png" class="icon010a1" />商户交易流水</b></a> </li-->
+					  </vt:if>
+					  <vt:if var="Priv.DetailInValidMerchant" value="TRUE"><li><a class="" href="/Reports/invalid_list2.aspx" menuid="Workspace.DetailInValidMerchant"><b><img src="icons/icon000.png" class="icon010a1" />未达标商户查询</b></a> </li></vt:if>
+					  <!--
+					  <vt:if var="Priv.StaticDealsOver30" value="TRUE"><li><a class="" href="/deals/over30.aspx" menuid="Workspace.DealsOver30"><b><img src="icons/icon000.png" class="icon010a1" />单卡交易超30笔</b></a> </li></vt:if>-->
+					  
+					  <vt:if var="Priv.StaticValidNoIC" value="TRUE"><li><a class="" href="/Reports/valid_no_ic_list.aspx" menuid="Workspace.ValidNoIC"><b><img src="icons/icon000.png" class="icon010a1" />已达标无IC卡交易</b></a> </li></vt:if>
+
+					   <vt:if var="Priv.MerchantNeedVisit" value="TRUE"><li><a class="" href="/Merchants/need_visit.aspx" menuid="Merchants.NeedVisit"><b><img src="icons/icon000.png" class="icon029a4" />待巡检商户</b></a> </li></vt:if>
+					  
+
+                    </ul>
+
+
+
+					<ul id="_Child_Menu_Platform.CCB" class="sideNavigation" style="display:none">
+						
+						<li><a class="" href="/users/worker_list.aspx" menuid="CCB.Contact"><b><img src="icons/icon000.png" class="icon029a12">业务联系人</b></a> </li>
+						<li><a class="" href="/merchantsccb/list.aspx?status=Setup" menuid="CCB.Ccbmerchant.Setup"><b><img src="icons/icon000.png" class="icon029a12">待安装商户</b></a> </li>
+						<li><a class="" href="/merchantsccb/list.aspx?status=Passed" menuid="CCB.CcbmerchantPass"><b><img src="icons/icon000.png" class="icon029a12">存量商户</b></a> </li>
+						<li><a class="" href="/merchantsccb/inquiry_list.aspx" menuid="CCB.InqueryTicket"><b><img src="icons/icon000.png" class="icon029a4">商户客服工单</b></a> </li>
+						<li><a class="" href="/MerchantsCcb/visit_ticket_list.aspx" menuid="CCB.NeedVisitTicket"><b><img src="icons/icon000.png" class="icon029a4">商户巡检工单</b></a> </li>
+						<li><a class="" href="/MerchantsCcb/visit_list.aspx" menuid="CCB.VisitHistory"><b><img src="icons/icon000.png" class="icon029a4">商户巡检记录</b></a> </li>
+						<li><a class="" href="/merchantsccb/exp_list.aspx" menuid="CCB.ExceptionMerchant"><b><img src="icons/icon000.png" class="icon029a4">商户异常上报</b></a> </li>
+
+						<li><a class="" href="/merchantsccb/stats_install.aspx" menuid="CCB.InstallState"><b><img src="icons/icon000.png" class="icon029a12">商户装机统计</b></a> </li>
+						<li><a class="" href="/merchantsccb/merchant.aspx" menuid="CCB.MerchantCount"><b><img src="icons/icon000.png" class="icon029a12">商户存量统计</b></a> </li>
+						<li><a class="" href="/Merchantsccb/stats_visite.aspx" menuid="CCB.VisiteState"><b><img src="icons/icon000.png" class="icon029a12">商户巡检统计</b></a> </li>
+						<li><a class="" href="/Merchantsccb/apprise_list.aspx" menuid="CCB.Apprise"><b><img src="icons/icon000.png" class="icon029a12">员工评价</b></a> </li>
+
+
+                    </ul>
+
+                  </div></td>
+              </tr>
+            </table></td>
+          <td id="rightColumnWrap"><div id="_framesWrap" style="position:relative; height:100%;"> 
+              <!--<a id="toggleLeftColumn"  href="#;" class="toggleBtn-left"></a>-->
+              <iframe id='_mainFrame_0' name="_mainFrame_0" frameborder="0" width="100%" height="100%" src='about:blank' scrolling="no" style="left:-22in;top:-11in;" allowtransparency="true"></iframe>
+            </div></td>
+        </tr>
+      </table></td>
+  </tr>
+</table>
+</body>
+</html>
