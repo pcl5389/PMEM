@@ -24,7 +24,7 @@ namespace PMeM
         }
         private void Button4_Click(object sender, EventArgs e)
         {
-            textBox4.Text = Scaler.MemShare.ToString();
+            textBox4.Text = Scaler.MemShare.toString();
         }
         public string chek(object i)
         {
@@ -43,8 +43,8 @@ namespace PMeM
         }
         public string getClient(object obj)
         {
-            Scaler.NewClient ct = Scaler.MemShare.GetClient();
-            Scaler.MemShare.ReleaseClient(ct);
+            //Scaler.NewClient ct = Scaler.MemShare.GetClient();
+            //Scaler.MemShare.ReleaseClient(ct);
             Interlocked.Decrement(ref iwork);
             return "";
         }
@@ -52,6 +52,7 @@ namespace PMeM
         int iwork = 0;
         private void Button5_Click(object sender, EventArgs e)
         {
+            /*
             DateTime dt = DateTime.Now;
             for (int j = 0; j < 10000; j++)
             {
@@ -60,9 +61,9 @@ namespace PMeM
             }
             MessageBox.Show((DateTime.Now - dt).TotalMilliseconds.ToString());
             //return;
-
+            */
             //* memshare 测试
-            for (int i = 0; i < 15375; i++)
+            for (int i = 0; i < 105375; i++)
             {
                 Interlocked.Increment(ref iwork);
                 Task<string>.Factory.StartNew(new Func<object, string>(chek), i);
@@ -251,8 +252,7 @@ namespace PMeM
 
         private void Button8_Click(object sender, EventArgs e)
         {
-            Scaler.MemShare.Init();
-            Scaler.MemShare.bInit = 0;
+            Scaler.MemShare.Dispose();
             MessageBox.Show("已关闭");
         }
 
@@ -414,7 +414,7 @@ namespace PMeM
         private void Button13_Click(object sender, EventArgs e)
         {
             //MessageBox.Show(Scaler.MemShare.ClientCount.ToString());
-            MessageBox.Show(Scaler.MemShare.Dump());
+            MessageBox.Show(Scaler.MemShare.ClinetsDump());
         }
 
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
