@@ -3,9 +3,7 @@ D:\Projects\PMeM\PMeM\bin\Release\PMeM.pdb
 D:\Projects\PMeM\PMeM\bin\Release\Scaler.dll
 D:\Projects\PMeM\PMeM\bin\Release\Newtonsoft.Json.dll
 D:\Projects\PMeM\PMeM\bin\Release\VTemplate.Engine.dll
-D:\Projects\PMeM\PMeM\bin\Release\AjaxPro.2.dll
 D:\Projects\PMeM\PMeM\bin\Release\Scaler.pdb
-D:\Projects\PMeM\PMeM\obj\Release\PMeM.csprojAssemblyReference.cache
 D:\Projects\PMeM\PMeM\obj\Release\PMeM.Form1.resources
 D:\Projects\PMeM\PMeM\obj\Release\PMeM.Properties.Resources.resources
 D:\Projects\PMeM\PMeM\obj\Release\PMeM.csproj.GenerateResource.cache
@@ -19,3 +17,4 @@ D:\Projects\PMeM\PMeM\obj\Release\Interop.WMPLib.dll
 D:\Projects\PMeM\PMeM\obj\Release\AxInterop.WMPLib.dll
 D:\Projects\PMeM\PMeM\obj\Release\PMeM.csproj.ResolveComReference.cache
 D:\Projects\PMeM\PMeM\bin\Release\PMeM.exe.config
+D:\Projects\PMeM\PMeM\obj\Release\PMeM.csproj.AssemblyReference.cache

@@ -1,14 +1,18 @@
 ﻿using System;
+using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Windows.Markup;
 
 namespace PMeM
 {
@@ -20,8 +24,214 @@ namespace PMeM
         }
         private void Button3_Click(object sender, EventArgs e)
         {
+            SortedList<string, string> sl = new SortedList<string, string>();
+            Dictionary<string, string> dc=new Dictionary<string, string>();
+            SortedDictionary<string, string> sdc=new SortedDictionary<string, string>();
+            
+            ConcurrentDictionary<string, string> cdc=new ConcurrentDictionary<string, string>();
+            Hashtable ht=new Hashtable();
+            SortedSet<string> st=new SortedSet<string>();
+
+
+
+            Stopwatch timer = new Stopwatch();
+            timer.Start();
+            for (int i = 0; i < 100000; i++)
+            {
+                dc.Add(DateTime.Now.ToString("mmssfff") + random(), "123456");
+            }
+            timer.Stop();
+
+            MessageBox.Show("dic: " + timer.ElapsedMilliseconds.ToString());
+            timer.Reset();
+
+            timer.Start();
+            for (int i = 0; i < 100000; i++)
+            {
+                sl.Add(DateTime.Now.ToString("mmssfff") + random(), "123456");
+            }
+            timer.Stop();
+
+            MessageBox.Show("sl: " + timer.ElapsedMilliseconds.ToString());
+            timer.Reset();
+
+            timer.Start();
+            for (int i = 0; i < 100000; i++)
+            {
+                sdc.Add(DateTime.Now.ToString("mmssfff") + random(), "123456");
+            }
+            timer.Stop();
+            MessageBox.Show("sdic: " + timer.ElapsedMilliseconds.ToString());
+            timer.Reset();
+
+            timer.Start();
+            for (int i = 0; i < 100000; i++)
+            {
+                cdc.TryAdd(DateTime.Now.ToString("mmssfff") + random(), "123456");
+            }
+            timer.Stop();
+            MessageBox.Show("cdic: " + timer.ElapsedMilliseconds.ToString());
+            timer.Reset();
+
+            timer.Start();
+            for (int i = 0; i < 100000; i++)
+            {
+                ht.Add(DateTime.Now.ToString("mmssfff") + random(), "123456");
+            }
+            timer.Stop();
+            MessageBox.Show("hash: " + timer.ElapsedMilliseconds.ToString());
+            timer.Reset();
+
+            timer.Start();
+            for (int i = 0; i < 100000; i++)
+            {
+                st.Add(DateTime.Now.ToString("mmssfff") + random());
+            }
+            timer.Stop();
+            MessageBox.Show("sortset: " + timer.ElapsedMilliseconds.ToString());
+            timer.Reset();
+
+            ///查询性能
+            timer.Start();
+            for (int i = 0; i < 100000; i++)
+            {
+                dc.ContainsKey(random());
+            }
+            timer.Stop();
+
+            MessageBox.Show("dic: " + timer.ElapsedMilliseconds.ToString());
+            timer.Reset();
+
+            timer.Start();
+            for (int i = 0; i < 100000; i++)
+            {
+                sl.ContainsKey(random());
+            }
+            timer.Stop();
+
+            MessageBox.Show("sl: " + timer.ElapsedMilliseconds.ToString());
+            timer.Reset();
+
+            timer.Start();
+            for (int i = 0; i < 100000; i++)
+            {
+                sdc.ContainsKey(random());
+            }
+            timer.Stop();
+            MessageBox.Show("sdic: " + timer.ElapsedMilliseconds.ToString());
+            timer.Reset();
+
+            timer.Start();
+            for (int i = 0; i < 100000; i++)
+            {
+                cdc.ContainsKey(random());
+            }
+            timer.Stop();
+            MessageBox.Show("cdic: " + timer.ElapsedMilliseconds.ToString());
+            timer.Reset();
+
+            timer.Start();
+            for (int i = 0; i < 100000; i++)
+            {
+                ht.ContainsKey(random());
+            }
+            timer.Stop();
+            MessageBox.Show("hash: " + timer.ElapsedMilliseconds.ToString());
+            timer.Reset();
+
+            timer.Start();
+            for (int i = 0; i < 100000; i++)
+            {
+                st.Contains(random());
+            }
+            timer.Stop();
+            MessageBox.Show("sortset: " + timer.ElapsedMilliseconds.ToString());
+            timer.Reset();
+
+            /*
+            Stopwatch watch = new Stopwatch();
+            //開始计时
+            watch.Start();
+            bool bint = true;
+            for (int i = 0; i < 10000000; i++)
+            {
+                _ = bint ? true : (bint = true);
+                //if(!bint)
+                   // bint = true;
+            }
+            watch.Stop();
+
+            //获取当前实例測量得出的总执行时间（以毫秒为单位）
+            string time = watch.ElapsedMilliseconds.ToString();
+            MessageBox.Show(time);
+
+
+            return;
+            */
+
             MessageBox.Show(Scaler.MemShare.Check(textBox1.Text, textBox2.Text).ToString());
         }
+        static Random rd = new Random();
+        static string random()
+        {
+            char[] constant = {'0','1','2','3','4','5','6','7','8','9',
+                               'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z',
+                               'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'};
+            StringBuilder sb = new StringBuilder(32);
+            
+            for (int i = 0; i < 16; i++)
+            {
+                sb.Append(constant[rd.Next(62)]);
+            }
+            return sb.ToString();
+        }
+
+        static string sha256Encode(string data)
+        {
+            SHA256 sha256 = new SHA256CryptoServiceProvider();
+            byte[] retVal = sha256.ComputeHash(Encoding.UTF8.GetBytes(data));
+            return bytesToHex(retVal);
+        }
+        static string sha256Encode2(string strData)
+        {
+            SHA256 sha256 = new SHA256CryptoServiceProvider();
+            byte[] retVal = sha256.ComputeHash(Encoding.UTF8.GetBytes(strData));
+            StringBuilder sb = new StringBuilder(64, 64);
+            return bytesToHex2(retVal);
+        }
+
+        public static int[] dd(byte bytes)
+        {
+            int bi = bytes & 0xff;
+            return new int[] { (bi >> 4), (int)(bi & 0xf) };
+        }
+
+        static string bytesToHex(byte[] bytes)
+        {
+            string hexArray = "0123456789abcdef";
+            StringBuilder sb = new StringBuilder();
+            foreach (byte b in bytes)
+            {
+                int bi = b & 0xff;
+                sb.Append(hexArray[bi >> 4]);
+                sb.Append(hexArray[bi & 0xf]);
+            }
+            return sb.ToString();
+        }
+
+        const string hexArray = "0123456789abcdef";
+        static string bytesToHex2(byte[] bytes)
+        {
+            StringBuilder sb = new StringBuilder();
+            foreach (byte b in bytes)
+            {
+                sb.Append(hexArray[b >> 4]);
+                sb.Append(hexArray[b & 0xf]);
+            }
+            return sb.ToString();
+        }
+
+
         private void Button4_Click(object sender, EventArgs e)
         {
             textBox4.Text = Scaler.MemShare.toString();
@@ -34,8 +244,11 @@ namespace PMeM
         }
         public string sign(object stu_id)
         {
-            string url = string.Format("http://localhost:50322/student/test.aspx?b_id=5&s_id={0}&l_id=213&d=fri", stu_id);
+            string url = string.Format("http://xuanke.juntaijishu.com/index/lock_test.aspx?b_id=7&s_id={0}&l_id=261&d=fri", stu_id);
             Scaler.Http http = new Scaler.Http();
+            http.KeepAlive = false;
+            //http.Proxy = "127.0.0.1"; http.ProxyPort = "8888";
+
             string content= http.GetHTML(url, "", "", "", "GET");
             Scaler.Win.WriteLog(stu_id + "\t" + content);
             Interlocked.Decrement(ref iwork);
@@ -48,7 +261,6 @@ namespace PMeM
             Interlocked.Decrement(ref iwork);
             return "";
         }
-
         int iwork = 0;
         private void Button5_Click(object sender, EventArgs e)
         {
@@ -63,14 +275,16 @@ namespace PMeM
             //return;
             */
             //* memshare 测试
-            for (int i = 0; i < 105375; i++)
+            for (int i = 0; i < 2000; i++)
             {
                 Interlocked.Increment(ref iwork);
-                Task<string>.Factory.StartNew(new Func<object, string>(chek), i);
+                Task<string>.Factory.StartNew(new Func<object, string>(sign), i);
             }
             WaitFinished();
             //*/
         }
+
+
 
 
 
@@ -95,7 +309,7 @@ namespace PMeM
             //開始计时
             watch.Start();
 
-            for (int i = 0; i < 10000; i++)
+            for (int i = 0; i < 1000000; i++)
             {
                 method1();
             }
@@ -105,7 +319,7 @@ namespace PMeM
             string time = watch.ElapsedMilliseconds.ToString();
             MessageBox.Show(time);
         }
-
+        
         public void method1()
         {
             FileInfo fi = new FileInfo("Index_index.html");
@@ -385,11 +599,7 @@ namespace PMeM
 
             string url = Text2Audio("1号桌订餐红烧茄子").TrimStart(new char[] { '1' });
 
-            axWindowsMediaPlayer1.stretchToFit = true; // 自动缩放。
-            axWindowsMediaPlayer1.currentPlaylist.clear();//清除播放的内容
-            axWindowsMediaPlayer1.currentPlaylist.appendItem(axWindowsMediaPlayer1.newMedia(url));//添加播放的地址
-            axWindowsMediaPlayer1.Ctlcontrols.play();//立即播放
-
+  
 
             //Mp3.Play(url);
             textBox4.Text = url;
@@ -413,9 +623,28 @@ namespace PMeM
 
         private void Button13_Click(object sender, EventArgs e)
         {
-            //MessageBox.Show(Scaler.MemShare.ClientCount.ToString());
-            MessageBox.Show(Scaler.MemShare.ClinetsDump());
+            Stopwatch timer = new Stopwatch();
+            timer.Start();
+            for (int i = 0; i < 100000; i++)
+            {
+
+            }
+            timer.Stop();
+
+            MessageBox.Show(timer.ElapsedMilliseconds.ToString());
+            timer.Reset();
+
+            timer.Start();
+            for (int i = 0; i < 100000; i++)
+            {
+
+            }
+            timer.Stop();
+            MessageBox.Show(timer.ElapsedMilliseconds.ToString());
+            timer.Reset();
         }
+
+
 
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
